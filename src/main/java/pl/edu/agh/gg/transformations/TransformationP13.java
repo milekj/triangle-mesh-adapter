@@ -10,7 +10,7 @@ import pl.edu.agh.gg.model.Vertex;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TransformationP12 implements DoubleInteriorTransformation {
+public class TransformationP13 implements DoubleInteriorTransformation {
 
     public class UpperLayerValidator {
         public boolean isValid(List<Vertex> commonAdjacents, GraphModel graph) {
@@ -57,17 +57,21 @@ public class TransformationP12 implements DoubleInteriorTransformation {
         Vertex[] secondInteriorAdjacents = getValidAdjacentInterior(secondInterior, graph).getAdjacentVertices().toArray(new Vertex[0]);
 
         List<Vertex> nextLayerSharedNodes = getSharedNodesFromNextLayer(firstInterior, secondInterior, graph);
-        if (nextLayerSharedNodes.size() != 0)
+        if (nextLayerSharedNodes.size() != 1)
             return false;
 
-        List<Vertex> nextLayerWithTheSameCoords = getNodesWithTheSameCoordsFromNextLayer(firstInterior, secondInterior, graph);
-        if (nextLayerWithTheSameCoords.size() != 2)
+        List<Vertex> nextLayerWithTheSameCoords = getNodesWithTheSameCoordsFromNextLayer(firstInterior, secondInterior, graph).stream()
+                .filter(v -> !v.equals(nextLayerSharedNodes.get(0)))
+                .collect(Collectors.toList());
+
+        if (nextLayerWithTheSameCoords.size() != 1)
             return false;
 
         Vertex v1_1 = Arrays.stream(firstInteriorAdjacents).filter(v -> v.equals(nextLayerWithTheSameCoords.get(0))).findFirst().get();
         Vertex v2_1 = Arrays.stream(secondInteriorAdjacents).filter(v -> v.equals(v1_1)).findFirst().get();
 
-        Vertex v1_2 = Arrays.stream(firstInteriorAdjacents).filter(v -> v.equals(nextLayerWithTheSameCoords.get(1))).findFirst().get();
+        // Common node from both interiors
+        Vertex v1_2 = Arrays.stream(firstInteriorAdjacents).filter(v -> v.equals(nextLayerSharedNodes.get(0))).findFirst().get();
         Vertex v2_2 = Arrays.stream(secondInteriorAdjacents).filter(v -> v.equals(v1_2)).findFirst().get();
 
         return graph.getEdgeBetweenNodes(v1_1, v2_1).isEmpty() && graph.getEdgeBetweenNodes(v1_2, v2_2).isEmpty()
@@ -134,12 +138,19 @@ public class TransformationP12 implements DoubleInteriorTransformation {
     @Override
     public void transform(GraphModel graph, InteriorNode firstInterior, InteriorNode secondInterior) {
         LayerDescriptor nextLayerDescriptor = graph.resolveInteriorLayer(firstInterior.getUUID()).get().getNextLayerDescriptor();
-        List<Vertex> common = getNodesWithTheSameCoordsFromNextLayer(firstInterior, secondInterior, graph);
+
+        List<Vertex> nextLayerSharedNodes = getSharedNodesFromNextLayer(firstInterior, secondInterior, graph);
+        List<Vertex> common = getNodesWithTheSameCoordsFromNextLayer(firstInterior, secondInterior, graph).stream()
+                .filter(v -> !v.equals(nextLayerSharedNodes.get(0)))
+                .collect(Collectors.toList());
 
         List<Vertex> verts1 = getVertexes(graph, firstInterior, common);
         List<Vertex> verts2 = getVertexes(graph, secondInterior, common);
 
-        for (int i = 0; i < 2; i++) {
+        assert verts1.size() == 1;
+        assert verts2.size() == 1;
+
+        for (int i = 0; i < 1; i++) {
             Vertex merged = verts1.get(i);
             merged.setLabel(merged.getLabel() + "__merged");
             ArrayList<Vertex> toChangeEdges = new ArrayList<>();
@@ -173,6 +184,7 @@ public class TransformationP12 implements DoubleInteriorTransformation {
                 n.removeAdjacentVertex(verts2.get(i));
             }
         }
+
         for (Vertex vert : verts2) {
             graph.removeVertex(vert);
         }
@@ -266,20 +278,21 @@ public class TransformationP12 implements DoubleInteriorTransformation {
         //layer 2
         LayerDescriptor layer2 = new LayerDescriptor(2);
         Vertex v2_1 = graphModel.insertVertex("E2_1", new Coordinates(x1, y1, 200), layer2).get();
-        Vertex v2_2 = graphModel.insertVertex("E2_2", new Coordinates(x2, y2, 200), layer2).get();
-        Vertex v2_3 = graphModel.insertVertex("E2_3", new Coordinates(x1, y1, 200), layer2).get();
-        Vertex v2_4 = graphModel.insertVertex("E2_4", new Coordinates(x2, y2, 200), layer2).get();
+        Vertex v2_2 = graphModel.insertVertex("E2_2", new Coordinates(x1, y1, 200), layer2).get();
 
-        InteriorNode i2_1 = graphModel.insertInterior("I2_1", layer2, v2_1, v2_2).get();
-        InteriorNode i2_2 = graphModel.insertInterior("I2_2", layer2, v2_3, v2_4).get();
+        // Common node
+        Vertex v2_3 = graphModel.insertVertex("E2_3", new Coordinates(x2, y2, 200), layer2).get();
+
+        InteriorNode i2_1 = graphModel.insertInterior("I2_1", layer2, v2_1, v2_3).get();
+        InteriorNode i2_2 = graphModel.insertInterior("I2_2", layer2, v2_2, v2_3).get();
 
         //edges between layer 1 and 2
         graphModel.insertEdge(i1_1, i2_1);
         graphModel.insertEdge(i1_2, i2_2);
 
         //edges in layer 2
-        graphModel.insertEdge(v2_1, v2_2, layer2);
-        graphModel.insertEdge(v2_3, v2_4, layer2);
+        graphModel.insertEdge(v2_1, v2_3, layer2);
+        graphModel.insertEdge(v2_2, v2_3, layer2);
 
         return graphModel;
     }

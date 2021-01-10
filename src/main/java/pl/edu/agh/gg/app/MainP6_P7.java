@@ -12,14 +12,16 @@ import java.util.List;
 
 public class MainP6_P7 {
     public static void main(String[] args) {
-        final GraphModel graph = TransformationP12.validGraph();
+        final GraphModel graph = TransformationP13.validGraph();
+//        final GraphModel graph = TransformationP12.validGraph();
 //        final GraphModel graph = createStartingGraph();
         Visualizer startVisualizer = new Visualizer(graph);
         startVisualizer.visualize(new LayerDescriptor(0));
         startVisualizer.visualize(new LayerDescriptor(1));
         startVisualizer.visualize(new LayerDescriptor(2));
         List<Transformation> transformations = Arrays.asList(new TransformationP1(), new TransformationP2());
-        List<DoubleInteriorTransformation> doubleInteriorTransformations = Arrays.asList(new TransformationP12());
+        List<DoubleInteriorTransformation> doubleInteriorTransformations = Arrays.asList(new TransformationP13());
+//        List<DoubleInteriorTransformation> doubleInteriorTransformations = Arrays.asList(new TransformationP12());
 
         for (int i = 0; i < 2; i ++) { // this will be replaced with a do-while loop when we have the logic for refining the triangles
             InteriorNode[] interiors = graph.getInteriors().toArray(new InteriorNode[0]);
